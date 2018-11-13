@@ -1,14 +1,15 @@
 /*
-  ELEC1100 Lab06
-
-  To program the car turning left at split
-
+  ELEC1100 project
+  Group38
 */
+#include "drive.h"
+#include "Arduino.h"
 
 // assign meaningful names to those pins that will be used
 #define pinLeftSensor A5      //pin A5
 #define pinRightSensor A3     //pin A3
-#define pinMiddleSensor A0    //pin A0
+#define pinWallSensor A0    //pin A0
+#define pinMiddleSensor A1  //pin A1
 
 #define pinLQ3 3              //pin D3
 #define pinLQ2 4              //pin D4
@@ -26,120 +27,25 @@
 #define BACKWARD LOW          //back as LOW
 #define FORWARD HIGH          //forward as HIGH
 
-//define variables to be used in script
-int leftSensor = 1;
-int rightSensor = 1;
-int middleSensor = 1;
 
 //the times of the turn
 int turn_times = 1;  
 
 //the state of start or stop or return
 int state = 1;
-               
 
-//easier way to set the left motor
-void L_drive_motor(int LQ3,int LQ2,int LQ1,int LQ0,int Ldir)
-{
-  digitalWrite(pinLQ3, LQ3);
-  digitalWrite(pinLQ2, LQ2);
-  digitalWrite(pinLQ1, LQ1);
-  digitalWrite(pinLQ0, LQ0);
-  digitalWrite(pinLdir,Ldir);
-}
-
-//easier way to set the right motor
-void R_drive_motor(int RQ3,int RQ2,int RQ1,int RQ0,int Rdir)
-{
-  digitalWrite(pinLQ3, RQ3);
-  digitalWrite(pinLQ2, RQ2);
-  digitalWrite(pinLQ1, RQ1);
-  digitalWrite(pinLQ0, RQ0);
-  digitalWrite(pinLdir,Rdir);
-}
-
-//start 
-void start(int middle_S, int* state)
-{
-  while (*state == 1)
-  {
-    L_drive_motor(0,0,0,0,FORWARD);
-    R_drive_motor(0,0,0,0,FORWARD);
-    digitalWrite(LED_BUILTIN, HIGH);
-    if(middle_S == 1) //release the white wall
-    {
-      *state += 1;
-      break;
-    }
-  }
-}
-
-void stop_and_back(int middle_S, int* state)
-{
-  if(*state == 2 && middle_S == 0)
-  {
-     L_drive_motor(0,0,0,0,BACKWARD);
-     R_drive_motor(0,0,0,0,BACKWARD);
-     delay(1500);
-     *state += 1;
-  }
-  L_drive_motor(0,1,1,1,BACKWARD);
-  R_drive_motor(0,1,1,1,BACKWARD);
-  delay(3000);
-}
-
-//adjust the position of the car
-void adjust(int left_S, int right_S)
-{
-  //go too right, turn left
-  if (!left_S && right_S)
-  {
-    L_drive_motor(0,1,0,0,FORWARD);
-    R_drive_motor(1,1,1,1,FORWARD);    
-  }
-
-  //go too left, turn right
-  else if (left_S && right_S)
-  {
-    L_drive_motor(1,1,1,1,FORWARD);
-    R_drive_motor(0,1,0,0,FORWARD);
-  }  
-}
-
-// decide and turn on the splits
-void split_turn(int left_S,int right_S, int* turn_num)
-{
-  while(left_S && right_S)
-  {
-    switch(*turn_num)
-    {
-      case 1:   //first turn: left
-          L_drive_motor(0,0,1,1,BACKWARD);
-          R_drive_motor(1,1,1,1,FORWARD);
-          break;
-      case 2:   //second turn: left
-          L_drive_motor(0,0,1,1,BACKWARD);
-          R_drive_motor(1,1,1,1,FORWARD);
-          break;
-      case 3:   //third turn: right
-          L_drive_motor(1,1,1,1,FORWARD);
-          R_drive_motor(0,0,1,1,BACKWARD);
-          break;
-      case 5:   //alarm for error decision and pause
-          digitalWrite(LED_BUILTIN, HIGH);
-          delay(400);
-          digitalWrite(LED_BUILTIN, LOW);
-          delay(400);       
-    }
-  }
-  *turn_num += 1;
-}
+//define variables to be used in script
+int leftSensor = 1;
+int rightSensor = 1;
+int middleSensor = 1;
+int wallSensor = 1;
 
 // the setup function runs once when you press reset or power the board
 void setup() {
   // define pins as input and output.
   pinMode(pinLeftSensor, INPUT);
   pinMode(pinRightSensor, INPUT);
+  pinMode(pinWallSensor, INPUT);
   pinMode(pinMiddleSensor, INPUT);
 
   pinMode(pinLQ3, OUTPUT);
@@ -173,10 +79,12 @@ void setup() {
 void loop() {
   leftSensor = digitalRead(pinLeftSensor);
   rightSensor = digitalRead(pinRightSensor);
+  wallSensor = digitalRead(pinWallSensor);
   middleSensor = digitalRead(pinMiddleSensor);
   
-  start(middleSensor, &state);
-  stop_and_back(middleSensor, &state);
-  adjust(leftSensor,rightSensor);
-  split_turn(leftSensor, rightSensor, &turn_times);  
+  start(wallSensor, &state);
+  stop_and_back(wallSensor, &state);
+  adjust(leftSensor,rightSensor,middleSensor);
+  split_turn(leftSensor, rightSensor,
+             middleSensor , &turn_times);  
 }
