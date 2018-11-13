@@ -32,7 +32,10 @@ int rightSensor = 1;
 int middleSensor = 1;
 
 //the times of the turn
-int turn_times = 1;                  
+int turn_times = 1;  
+
+//the state of start or stop or return
+int state = 1;
                
 
 //easier way to set the left motor
@@ -53,6 +56,36 @@ void R_drive_motor(int RQ3,int RQ2,int RQ1,int RQ0,int Rdir)
   digitalWrite(pinLQ1, RQ1);
   digitalWrite(pinLQ0, RQ0);
   digitalWrite(pinLdir,Rdir);
+}
+
+//start 
+void start(int middle_S, int* state)
+{
+  while (*state == 1)
+  {
+    L_drive_motor(0,0,0,0,FORWARD);
+    R_drive_motor(0,0,0,0,FORWARD);
+    digitalWrite(LED_BUILTIN, HIGH);
+    if(middle_S == 1) //release the white wall
+    {
+      *state += 1;
+      break;
+    }
+  }
+}
+
+void stop_and_back(int middle_S, int* state)
+{
+  if(*state == 2 && middle_S == 0)
+  {
+     L_drive_motor(0,0,0,0,BACKWARD);
+     R_drive_motor(0,0,0,0,BACKWARD);
+     delay(1500);
+     *state += 1;
+  }
+  L_drive_motor(0,1,1,1,BACKWARD);
+  R_drive_motor(0,1,1,1,BACKWARD);
+  delay(3000);
 }
 
 //adjust the position of the car
@@ -107,6 +140,7 @@ void setup() {
   // define pins as input and output.
   pinMode(pinLeftSensor, INPUT);
   pinMode(pinRightSensor, INPUT);
+  pinMode(pinMiddleSensor, INPUT);
 
   pinMode(pinLQ3, OUTPUT);
   pinMode(pinLQ2, OUTPUT);
@@ -137,10 +171,12 @@ void setup() {
 
 // the loop function runs over and over again forever
 void loop() {
-  
   leftSensor = digitalRead(pinLeftSensor);
   rightSensor = digitalRead(pinRightSensor);
+  middleSensor = digitalRead(pinMiddleSensor);
   
+  start(middleSensor, &state);
+  stop_and_back(middleSensor, &state);
   adjust(leftSensor,rightSensor);
   split_turn(leftSensor, rightSensor, &turn_times);  
 }
